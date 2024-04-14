@@ -41,7 +41,6 @@ export const useGameRecordRemote = () => {
         }),
       });
 
-
       if (response.ok) {
         const updatedRecord: GameRecord = await response.json();
         setRecords((prevRecords) =>
@@ -64,7 +63,7 @@ export const useGameRecordRemote = () => {
           return record;
         }
       } catch (error) {
-        console.error("Failed to fetch game record:", error);
+        // console.error("Failed to fetch game record:", error);
       }
       return undefined;
     },

@@ -75,17 +75,20 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   // 初回の読み込み
   const onStartNewGame = useCallback(
     async (gameSeedId?: string) => {
-      let newGameSeedId;
+      setInheritedRecord(() => null);
+      let newGameSeedId: string | null = null;
       if (gameSeedId) {
-        const GameRecord = await getGameRecord(gameSeedId);
-        if (GameRecord) {
-          setInheritedRecord(GameRecord);
+        const gameRecord = await getGameRecord(gameSeedId);
+        if (gameRecord) {
+          setInheritedRecord(gameRecord);
           newGameSeedId = gameSeedId;
         }
       }
-      setIsNewGame(true);
+      setIsNewGame(() => true);
 
-      setCurrentGameSeedId(newGameSeedId ? newGameSeedId : nanoid());
+      setCurrentGameSeedId(() => {
+        return newGameSeedId ? newGameSeedId : nanoid();
+      });
     },
     [getGameRecord]
   );

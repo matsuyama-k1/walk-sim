@@ -14,13 +14,18 @@ const Ranking = memo(({ results, onStartNewGame }: RankingProps) => {
 
   return (
     <div>
-      <h2>Ranking</h2>
+      <h2>Zen Mode</h2>
+      <p>
+        スコア世界一を目指すモード。被弾は無制限。上位３位のデータを引き継ぐことも可能。
+      </p>
       <ul>
         {sortedRecords.map((result, index) => (
-          <li key={index} onClick={() => onStartNewGame(result.gameSeedId)}>
-            {`${index + 1}. ${result.score} points, ${
-              result.name
-            }, ${formatDate(new Date(result.latestTimestamp))}`}
+          <li key={index}>
+            <button onClick={() => onStartNewGame(result.gameSeedId)}>
+              {`${index + 1}. ${result.score} points, ${
+                result.name
+              }, ${formatDate(new Date(result.latestTimestamp))}`}
+            </button>
           </li>
         ))}
       </ul>

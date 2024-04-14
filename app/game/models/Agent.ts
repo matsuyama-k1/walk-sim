@@ -19,7 +19,7 @@ export class Agent {
   private isControlled: boolean;
   private isActive: boolean; // スタートしててゴールしていない
   private movingArea: Rect;
-  static readonly Vmax: number = 1;
+  static readonly Vmax: number = 1.2;
   static readonly k: number = 0.01;
   static readonly dt: number = 1;
   static readonly Trun: number = 3;
