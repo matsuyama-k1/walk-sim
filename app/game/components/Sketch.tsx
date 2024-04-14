@@ -61,6 +61,8 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   const [top3Results, setTop3Results] = useState<GameResult[]>([]);
   const [isWaitingAsync, setIsWaitingAsync] = useState<boolean>(false);
 
+  const [name, setName] = useState<string | undefined>("ななし");
+
   const { saveGameRecord, getGameRecord, getTop3Results } =
     useGameRecordRemote();
 
@@ -228,7 +230,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         startingSafeZone = null; // 開始時のセーフゾーンをリセット
         const record: AgentRecord = {
           movements: controllingAgent.movements,
-          name: "テストネーム",
+          name: name,
         };
         controllingAgent = null;
         turnEnded = true;
@@ -369,6 +371,10 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       <div>Score: {pastAgents.length}</div>
       <div>
         Remaining Time: {Math.max(TIME_LIMIT - currentTime, 0).toFixed(2)}
+      </div>
+      <div>
+        Name:{" "}
+        <input onChange={(e) => setName(e.target.value)} value={name}></input>
       </div>
       <Ranking results={top3Results} onStartNewGame={onStartNewGame} />
     </div>
