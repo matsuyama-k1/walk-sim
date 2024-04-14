@@ -54,7 +54,7 @@ export async function POST(
       gameRecord = new GameRecordMongo({
         score,
         gameSeedId,
-        agentRecords: [agentRecord],
+        agentRecords: agentRecord,
         latestName: agentRecord.name,
         latestTimestamp: new Date().getTime(),
       });

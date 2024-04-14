@@ -1,15 +1,11 @@
 "use client";
 import p5Types, * as p5 from "p5"; //Import this for typechecking and intellisense
 
+import { useGameRecordRemote } from "@/app/game/hooks/useGameRecordRemote";
 import { nanoid } from "nanoid";
 import React, { useCallback, useEffect, useState } from "react";
 import Sketch from "react-p5";
-import {
-  AgentRecord,
-  GameRecord,
-  GameResult,
-  useGameRecords,
-} from "../hooks/useGameRecords";
+import { AgentRecord, GameRecord, GameResult } from "../hooks/useGameRecords";
 import { Agent, AGENT_SIZE } from "../models/Agent";
 import { SafeZone } from "../models/SafeZone";
 import { Signal } from "../models/Signal";
@@ -63,20 +59,25 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   );
   const [pastAgents, setPastAgents] = useState<Agent[]>([]);
   const [top3Results, setTop3Results] = useState<GameResult[]>([]);
+  const [isWaitingAsync, setIsWaitingAsync] = useState<boolean>(false);
 
-  const { saveGameRecord, getGameRecord, getTop3Results } = useGameRecords();
+  const { saveGameRecord, getGameRecord, getTop3Results } =
+    useGameRecordRemote();
 
   useEffect(() => {
-    const top3Results = getTop3Results();
-    setTop3Results(top3Results);
+    const fetchTop3Results = async () => {
+      const top3Results = await getTop3Results();
+      setTop3Results(top3Results);
+    };
+    fetchTop3Results();
   }, [getTop3Results]);
 
   // 初回の読み込み
   const onStartNewGame = useCallback(
-    (gameSeedId?: string) => {
+    async (gameSeedId?: string) => {
       let newGameSeedId;
       if (gameSeedId) {
-        const GameRecord = getGameRecord(gameSeedId);
+        const GameRecord = await getGameRecord(gameSeedId);
         if (GameRecord) {
           setInheritedRecord(GameRecord);
           newGameSeedId = gameSeedId;
@@ -139,7 +140,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   );
 
   // 新しいターンの処理
-  function processNewTurn(p: p5) {
+  async function processNewTurn(p: p5) {
     // TODO: 最新のresultを取得
     if (!isNewTurn) return;
     // 新しいターンの場合
@@ -149,9 +150,15 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       safeZone.setHover(safeZone.contains(p.createVector(p.mouseX, p.mouseY)));
 
       // 始める歩道を選択した時
-      safeZone.onClick(() => {
+      safeZone.onClick(async () => {
+        // 時間を0に
+        setCurrentTime(() => 0);
+        setElapsedTime(() => {
+          return p.millis() / 1000;
+        });
         // ターンを開始
         setIsNewTurn(false);
+        setIsWaitingAsync(() => true);
         startingSafeZone = safeZone;
 
         // 歩道を選んだ時、歩道の中央にコントロールするAgentを配置
@@ -169,7 +176,9 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
 
         // 過去のエージェントを取得
         if (currentGameSeedId) {
-          const newGameRecord = getGameRecord(currentGameSeedId);
+          setIsWaitingAsync(() => true);
+          const newGameRecord = await getGameRecord(currentGameSeedId);
+          setIsWaitingAsync(() => false);
           if (newGameRecord) {
             const newPastAgents = newGameRecord.agentRecords.map(
               (agentRecord) => {
@@ -186,12 +195,6 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
             setPastAgents(() => newPastAgents);
           }
         }
-
-        // 時間を0に
-        setCurrentTime(() => 0);
-        setElapsedTime(() => {
-          return p.millis() / 1000;
-        });
       });
 
       // 歩道の選択可能状態を解除
@@ -199,11 +202,12 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         safeZone.setIsSelectable(false);
         safeZone.setHover(false);
       }
+      setIsWaitingAsync(() => false);
     }
   }
 
   // ターンが終了したかを判定し、処理
-  function checkTurnEndAndProcess(p: p5) {
+  async function checkTurnEndAndProcess(p: p5) {
     if (!isNewTurn && controllingAgent) {
       // Agentがいる歩道を探す
       const currentSafeZone = safeZones.find(
@@ -226,8 +230,15 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         controllingAgent = null;
         turnEnded = true;
 
-        if (currentGameSeedId)
-          saveGameRecord(pastAgents.length + 1, currentGameSeedId, record);
+        if (currentGameSeedId) {
+          setIsWaitingAsync(() => true);
+          await saveGameRecord(
+            pastAgents.length + 1,
+            currentGameSeedId,
+            record
+          );
+          setIsWaitingAsync(() => false);
+        }
       } else {
         // 衝突した場合
         const failedByCollision =
@@ -243,7 +254,11 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       }
       if (turnEnded) {
         // ランキングを更新
-        setTop3Results(getTop3Results());
+        setIsWaitingAsync(() => true);
+        const top3Results = await getTop3Results();
+        setIsWaitingAsync(() => false);
+
+        setTop3Results(top3Results);
       }
     }
   }
@@ -290,7 +305,8 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     signal = new Signal(p5, signalX, signalY, signalSize, TIME_LIMIT);
   };
 
-  const draw = (p5: p5Types) => {
+  const draw = async (p5: p5Types) => {
+    if (isWaitingAsync) return;
     // ゲームを開始
     if (isNewGame) {
       startGame(p5);
@@ -309,11 +325,15 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     drawDefaultView(p5);
 
     if (controllingAgent) {
-      if (!isMissed && !isNewTurn) controllingAgent.recordMovement(currentTime);
+      if (!isMissed && !isNewTurn) {
+        controllingAgent.recordMovement(currentTime);
+      }
 
       controllingAgent.update();
       controllingAgent.display();
-      checkTurnEndAndProcess(p5);
+      setIsWaitingAsync(() => true);
+      await checkTurnEndAndProcess(p5);
+      setIsWaitingAsync(() => false);
     }
 
     // 過去のターンの動きを再生
@@ -382,7 +402,10 @@ function checkCollision(p: p5, agent: Agent, pastAgents: Agent[]): boolean {
     if (
       otherAgent !== agent &&
       otherAgent.getIsActive() &&
-      p5.Vector.dist(agent.position, otherAgent.position) < AGENT_SIZE
+      p5.Vector.dist(
+        p.createVector(agent.position.x, agent.position.y),
+        p.createVector(otherAgent.position.x, otherAgent.position.y)
+      ) < AGENT_SIZE
     ) {
       return true;
     }

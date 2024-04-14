@@ -143,6 +143,7 @@ export class Agent {
         time: time,
         position: this.position.copy(),
       });
+      this.lastRecordedTime = time;
     }
   }
   // 特定の時間におけるエージェントの位置を再現するメソッド
@@ -151,6 +152,7 @@ export class Agent {
 
     const lastMovement = this.movements[this.movements.length - 1];
     const firstMovement = this.movements[0];
+
     // 移動記録がない時間については表示しない
     if (time < firstMovement.time || time >= lastMovement.time) {
       this.setIsActive(false);
@@ -158,15 +160,33 @@ export class Agent {
     } else {
       this.setIsActive(true);
     }
-    const relevantMovement = this.movements.reduce((prev, current) => {
-      return Math.abs(current.time - time) < Math.abs(prev.time - time)
-        ? current
-        : prev;
-    });
 
-    if (relevantMovement) {
-      this.position = relevantMovement.position;
-      this.isActive = true;
+    // 指定された時間の前後の2つの動きを見つける
+    let prevMovement = firstMovement;
+    let nextMovement = lastMovement;
+
+    for (let i = 0; i < this.movements.length - 1; i++) {
+      if (this.movements[i].time <= time && time < this.movements[i + 1].time) {
+        prevMovement = this.movements[i];
+        nextMovement = this.movements[i + 1];
+        break;
+      }
     }
+
+    // 線形補間を使って、指定された時間における位置を計算する
+    const t =
+      (time - prevMovement.time) / (nextMovement.time - prevMovement.time);
+    const lerpPosition = {
+      x: lerp(prevMovement.position.x, nextMovement.position.x, t),
+      y: lerp(prevMovement.position.y, nextMovement.position.y, t),
+    };
+
+    this.position = new p5.Vector(lerpPosition.x, lerpPosition.y, 0);
+    this.isActive = true;
   }
+}
+
+// 線形補間
+function lerp(start: number, end: number, t: number) {
+  return start + (end - start) * t;
 }

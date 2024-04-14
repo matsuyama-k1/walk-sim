@@ -24,13 +24,13 @@ export type GameResult = {
 export const useGameRecords = () => {
   const [records, setRecords] = useState<GameRecord[]>([]);
 
-  const saveGameRecord = (
+  const saveGameRecord = async (
     score: number,
     gameSeedId: string,
     agentRecord: AgentRecord
   ) => {
     const loadedRecord = getGameRecord(gameSeedId);
-
+    await delay(0.05);
     if (loadedRecord) {
       if (score <= loadedRecord.score) {
         // 既存の結果よりスコアが低い場合は保存しない
@@ -89,3 +89,9 @@ export const useGameRecords = () => {
 
   return { saveGameRecord, getGameRecord, getTop3Results };
 };
+
+function delay(seconds: number) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, seconds * 1000);
+  });
+}

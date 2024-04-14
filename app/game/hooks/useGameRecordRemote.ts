@@ -41,6 +41,7 @@ export const useGameRecordRemote = () => {
         }),
       });
 
+
       if (response.ok) {
         const updatedRecord: GameRecord = await response.json();
         setRecords((prevRecords) =>
