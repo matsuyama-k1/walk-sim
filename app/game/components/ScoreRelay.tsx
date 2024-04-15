@@ -1,6 +1,14 @@
+import { formatDate } from "@/lib/utils";
+import {
+  Button,
+  Divider,
+  List,
+  ListItem,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { memo, useMemo } from "react";
 import { GameResult } from "../hooks/useScoreRelay_";
-import { formatDate } from "@/lib/utils";
 
 type RankingProps = {
   results: GameResult[];
@@ -8,30 +16,48 @@ type RankingProps = {
 };
 
 const ScoreRelay = memo(({ results, onStartNewGame }: RankingProps) => {
-  // スコアに基づいて結果を並べ替え、トップ3を取得
   const sortedRecords = useMemo(() => {
     return results.sort((a, b) => b.score - a.score).slice(0, 3);
   }, [results]);
 
   return (
-    <div>
-      <h2>スコアリレー</h2>
-      <p>
-        一人のプレイヤーから始まり、スコアをどこまで伸ばせるか、みんなで協力してチャレンジしよう！
-      </p>
-      <ul>
+    <VStack spacing={4} align="stretch">
+      <Button
+        mb={4}
+        colorScheme="teal"
+        size="lg"
+        onClick={() => onStartNewGame()}
+      >
+        新しいゲームを始める
+      </Button>
+      <Text fontWeight="bold" pb={2}>
+        途中から始める:
+      </Text>
+      <List spacing={3}>
         {sortedRecords.map((result, index) => (
-          <li key={index}>
-            <button onClick={() => onStartNewGame(result.gameSeedId)}>
-              {`${index + 1}. ${result.score} points, ${
-                result.name
-              }, ${formatDate(new Date(result.latestTimestamp))}`}
-            </button>
-          </li>
+          <ListItem key={index} boxShadow="md" borderRadius="md">
+            <Button
+              onClick={() => onStartNewGame(result.gameSeedId)}
+              width="full"
+              justifyContent="space-between"
+              variant="ghost"
+              p={4}
+            >
+              <Text fontWeight="medium">{`${index + 1}. ${
+                result.score
+              } points`}</Text>
+              <Text isTruncated maxW="200px" fontWeight="medium">
+                {result.name}
+              </Text>
+              <Text size="sm">
+                {formatDate(new Date(result.latestTimestamp))}
+              </Text>
+            </Button>
+            {index < sortedRecords.length - 1 && <Divider />}
+          </ListItem>
         ))}
-      </ul>
-      <button onClick={() => onStartNewGame()}>New Game</button>
-    </div>
+      </List>
+    </VStack>
   );
 });
 

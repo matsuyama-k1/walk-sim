@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/utils";
+import { Box, Button, Flex, List, ListItem, Text } from "@chakra-ui/react";
 import { memo, useMemo } from "react";
 import { GameResult } from "../hooks/useScoreRelay_";
 
@@ -8,26 +9,37 @@ type RankingProps = {
 };
 
 const RankingBattle = memo(({ results, onStartNewGame }: RankingProps) => {
-  // スコアに基づいて結果を並べ替え、トップ3を取得
   const sortedRecords = useMemo(() => {
     return results.sort((a, b) => b.score - a.score);
   }, [results]);
 
   return (
-    <div>
-      <h2>ランキングバトル</h2>
-      <p>他の人と競い、ハイスコアを目指すモード。接触・時間切れは５回以内。</p>
-      <button onClick={() => onStartNewGame()}>New Game</button>
-      <ul>
+    <Box>
+      <Button mb={4} colorScheme="orange" onClick={() => onStartNewGame()}>
+        新しいゲームを始める
+      </Button>
+      <List spacing={3}>
         {sortedRecords.map((result, index) => (
-          <li key={index}>
-            {`${index + 1}. ${result.score} points, ${
-              result.name
-            }, ${formatDate(new Date(result.latestTimestamp))}`}
-          </li>
+          <ListItem key={index} p={2}>
+            <Flex
+              width="full"
+              justifyContent="space-between"
+              px="10px"
+              fontWeight="bold"
+              gap="5px"
+            >
+              <Text>{`${index + 1}. ${result.score} points`}</Text>
+              <Text isTruncated maxW="200px">
+                {result.name}
+              </Text>
+              <Text size="sm">
+                {formatDate(new Date(result.latestTimestamp))}
+              </Text>
+            </Flex>
+          </ListItem>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Box>
   );
 });
 

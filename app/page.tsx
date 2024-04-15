@@ -1,4 +1,5 @@
 "use client";
+import { ChakraProvider } from "@chakra-ui/react";
 import dynamic from "next/dynamic";
 
 const WalkSim = dynamic(
@@ -9,7 +10,9 @@ const WalkSim = dynamic(
 export default function Home() {
   return (
     <>
-      <WalkSim />
+      <ChakraProvider>
+        <WalkSim />
+      </ChakraProvider>
     </>
   );
 }

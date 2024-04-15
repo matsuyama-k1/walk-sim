@@ -5,6 +5,20 @@ import RankingBattle from "@/app/game/components/RankingBattle";
 import ScoreRelay from "@/app/game/components/ScoreRelay";
 import { useRankingBattle } from "@/app/game/hooks/useRankingBattle";
 import { useScoreRelay } from "@/app/game/hooks/useScoreRelay";
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  Input,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { nanoid } from "nanoid";
 import React, { useCallback, useEffect, useState } from "react";
 import Sketch from "react-p5";
@@ -76,12 +90,16 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   const [gameMode, setGameMode] = useState<GameMode>("scoreRelay");
 
   useEffect(() => {
-    const fetchTop3Results = async () => {
+    const fetchResults = async () => {
+      // スコアリレー
       const top3Results = await getTop3Results();
       setTop3Results(top3Results);
+      // ランキングバトル
+      const newLeaderboard = await getTopLeaderboardEntries();
+      setLeaderboardResult(newLeaderboard);
     };
-    fetchTop3Results();
-  }, [getTop3Results]);
+    fetchResults();
+  }, [getTop3Results, getTopLeaderboardEntries]);
 
   // 初回の読み込み
   const onStartNewScoreRelay = useCallback(
@@ -302,6 +320,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           const newLeaderboard = await getTopLeaderboardEntries();
           setIsWaitingAsync(() => false);
           setLeaderboardResult(newLeaderboard);
+
           if (GAMEOVER_LIMIT <= gameOverCount) {
             setIsNewGame(true);
             setGameOverCount(0);
@@ -407,27 +426,63 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     }
   };
   return (
-    <div>
-      <Sketch
-        setup={setup}
-        draw={draw}
-        mousePressed={mousePressed}
-        mouseReleased={mouseReleased}
-      />
-      <div>Score: {pastAgents.length}</div>
-      <div>
-        Remaining Time: {Math.max(TIME_LIMIT - currentTime, 0).toFixed(2)}
-      </div>
-      <div>
-        Name:{" "}
-        <input onChange={(e) => setName(e.target.value)} value={name}></input>
-      </div>
-      <ScoreRelay results={top3Results} onStartNewGame={onStartNewScoreRelay} />
-      <RankingBattle
-        results={leaderboardResult}
-        onStartNewGame={onStartNewRankingBattle}
-      />
-    </div>
+    <Box p={5} bg="gray.100">
+      <VStack spacing={5}>
+        <Tabs isFitted variant="enclosed" colorScheme="blue">
+          <TabList mb={1}>
+            <Tab>協力プレイ</Tab>
+            <Tab>ランキングバトル</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              <Text fontSize="md">
+                一人のプレイヤーから始まり、スコアをどこまで伸ばせるか、みんなで協力してチャレンジしよう！
+              </Text>
+            </TabPanel>
+            <TabPanel>
+              <Text fontSize="md">
+                他の人と競い、ハイスコアを目指すモード。接触・時間切れは５回以内。
+              </Text>
+            </TabPanel>
+          </TabPanels>
+          <Flex>
+            <Sketch
+              setup={setup}
+              draw={draw}
+              mousePressed={mousePressed}
+              mouseReleased={mouseReleased}
+            />
+            <TabPanels>
+              <TabPanel>
+                <ScoreRelay
+                  results={top3Results}
+                  onStartNewGame={onStartNewScoreRelay}
+                />
+              </TabPanel>
+              <TabPanel>
+                <RankingBattle
+                  results={leaderboardResult}
+                  onStartNewGame={onStartNewRankingBattle}
+                />
+              </TabPanel>
+            </TabPanels>
+          </Flex>
+        </Tabs>
+
+        <HStack w="full" justify="space-between" align="center" mt={4}>
+          <Box>
+            <Text fontSize="lg">スコア: {pastAgents.length}</Text>
+            <Text fontSize="lg">
+              残り時間: {Math.max(0, currentTime).toFixed(2)} 秒
+            </Text>
+          </Box>
+          <Box>
+            <Text fontSize="lg">プレイヤー名:</Text>
+            <Input placeholder="名前を入力" size="md" />
+          </Box>
+        </HStack>
+      </VStack>
+    </Box>
   );
 };
 
