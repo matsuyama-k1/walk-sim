@@ -1,5 +1,5 @@
 import { formatDate } from "@/lib/utils";
-import { Box, Button, Flex, List, ListItem, Text } from "@chakra-ui/react";
+import { Button, Flex, List, ListItem, Text, VStack } from "@chakra-ui/react";
 import { memo, useMemo } from "react";
 import { GameResult } from "../hooks/useScoreRelay_";
 
@@ -14,11 +14,16 @@ const RankingBattle = memo(({ results, onStartNewGame }: RankingProps) => {
   }, [results]);
 
   return (
-    <Box>
-      <Button mb={4} colorScheme="orange" onClick={() => onStartNewGame()}>
-        新しいゲームを始める
+    <VStack spacing={4} align="stretch">
+      <Button
+        mb={4}
+        colorScheme="orange"
+        size="lg"
+        onClick={() => onStartNewGame()}
+      >
+        ランキングバトルを始める
       </Button>
-      <List spacing={3}>
+      <List spacing={3} h="300px" overflow="scroll">
         {sortedRecords.map((result, index) => (
           <ListItem key={index} p={2}>
             <Flex
@@ -28,7 +33,8 @@ const RankingBattle = memo(({ results, onStartNewGame }: RankingProps) => {
               fontWeight="bold"
               gap="5px"
             >
-              <Text>{`${index + 1}. ${result.score} points`}</Text>
+              <Text>{`${index + 1}. `}</Text>
+              <Text>{`${result.score} points`}</Text>
               <Text isTruncated maxW="200px">
                 {result.name}
               </Text>
@@ -39,7 +45,7 @@ const RankingBattle = memo(({ results, onStartNewGame }: RankingProps) => {
           </ListItem>
         ))}
       </List>
-    </Box>
+    </VStack>
   );
 });
 

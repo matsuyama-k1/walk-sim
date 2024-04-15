@@ -30,13 +30,13 @@ export class Signal {
     return this.isRed;
   }
 
-  public update(elapsedTime: number) {
-    this.isRed = elapsedTime >= this.timeLimit;
+  public update(currentTime: number) {
+    this.isRed = currentTime >= this.timeLimit;
     this.isYellow =
-      !this.isRed && elapsedTime > this.timeLimit - Signal.YELLOW_DURATION;
+      !this.isRed && currentTime > this.timeLimit - Signal.YELLOW_DURATION;
   }
 
-  public display() {
+  public display(currentTime: number) {
     this.p.fill(128);
     this.p.rect(this.x, this.y - this.size - 5, this.size, this.size * 3 + 10);
 
@@ -69,6 +69,15 @@ export class Signal {
       this.y + this.size,
       this.size,
       this.size
+    );
+    // 時間表示
+    this.p.fill(255);
+    this.p.textSize(20);
+    this.p.textAlign(this.p.CENTER, this.p.CENTER);
+    this.p.text(
+      `${(this.timeLimit - currentTime).toFixed(0)}`,
+      this.x + this.size / 2,
+      this.y + 3 * this.size
     );
   }
 }

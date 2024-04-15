@@ -15,7 +15,7 @@ export class SafeZone {
     this.position = p.createVector(x, y);
     this.size = size;
     this.defaultColor = p.color(200);
-    this.hoverColor = p.color(150);
+    this.hoverColor = p.color(100);
     this.color = this.defaultColor;
     this.isSelectable = true;
     this.id = id;

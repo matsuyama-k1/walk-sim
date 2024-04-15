@@ -13,53 +13,59 @@ import { GameResult } from "../hooks/useScoreRelay_";
 type RankingProps = {
   results: GameResult[];
   onStartNewGame: (gameSeedId?: string) => void;
+  currentGameSeedId: string | null;
 };
 
-const ScoreRelay = memo(({ results, onStartNewGame }: RankingProps) => {
-  const sortedRecords = useMemo(() => {
-    return results.sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [results]);
+const ScoreRelay = memo(
+  ({ results, onStartNewGame, currentGameSeedId }: RankingProps) => {
+    const sortedRecords = useMemo(() => {
+      return results.sort((a, b) => b.score - a.score).slice(0, 3);
+    }, [results]);
 
-  return (
-    <VStack spacing={4} align="stretch">
-      <Button
-        mb={4}
-        colorScheme="teal"
-        size="lg"
-        onClick={() => onStartNewGame()}
-      >
-        新しいゲームを始める
-      </Button>
-      <Text fontWeight="bold" pb={2}>
-        途中から始める:
-      </Text>
-      <List spacing={3}>
-        {sortedRecords.map((result, index) => (
-          <ListItem key={index} boxShadow="md" borderRadius="md">
-            <Button
-              onClick={() => onStartNewGame(result.gameSeedId)}
-              width="full"
-              justifyContent="space-between"
-              variant="ghost"
-              p={4}
-            >
-              <Text fontWeight="medium">{`${index + 1}. ${
-                result.score
-              } points`}</Text>
-              <Text isTruncated maxW="200px" fontWeight="medium">
-                {result.name}
-              </Text>
-              <Text size="sm">
-                {formatDate(new Date(result.latestTimestamp))}
-              </Text>
-            </Button>
-            {index < sortedRecords.length - 1 && <Divider />}
-          </ListItem>
-        ))}
-      </List>
-    </VStack>
-  );
-});
+    return (
+      <VStack spacing={4} align="stretch">
+        <Button
+          mb={4}
+          colorScheme="teal"
+          size="lg"
+          onClick={() => onStartNewGame()}
+        >
+          新しいゲームを始める
+        </Button>
+        <Text fontWeight="bold" pb={2}>
+          ランキングTop3から始める:
+        </Text>
+        <List spacing={3}>
+          {sortedRecords.map((result, index) => (
+            <ListItem key={index} boxShadow="md" borderRadius="md">
+              <Button
+                onClick={() => onStartNewGame(result.gameSeedId)}
+                width="full"
+                justifyContent="space-between"
+                variant="ghost"
+                p={4}
+                colorScheme={
+                  currentGameSeedId === result.gameSeedId ? "teal" : "white"
+                }
+              >
+                <Text fontWeight="medium">{`${index + 1}. ${
+                  result.score
+                } points`}</Text>
+                <Text isTruncated maxW="200px" fontWeight="medium">
+                  {result.name}
+                </Text>
+                <Text size="sm">
+                  {formatDate(new Date(result.latestTimestamp))}
+                </Text>
+              </Button>
+              {index < sortedRecords.length - 1 && <Divider />}
+            </ListItem>
+          ))}
+        </List>
+      </VStack>
+    );
+  }
+);
 
 ScoreRelay.displayName = "Ranking";
 

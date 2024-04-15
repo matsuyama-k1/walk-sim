@@ -7,9 +7,8 @@ import { useRankingBattle } from "@/app/game/hooks/useRankingBattle";
 import { useScoreRelay } from "@/app/game/hooks/useScoreRelay";
 import {
   Box,
-  Button,
   Flex,
-  HStack,
+  Heading,
   Input,
   Tab,
   TabList,
@@ -186,9 +185,6 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     // 新しいターンの場合
     // まずは歩道を選ぶ
     for (const safeZone of safeZones) {
-      safeZone.setIsSelectable(true);
-      safeZone.setHover(safeZone.contains(p.createVector(p.mouseX, p.mouseY)));
-
       // 始める歩道を選択した時
       safeZone.onClick(async () => {
         // 時間を0に
@@ -213,7 +209,6 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           movingArea,
           true
         );
-
         // 過去のエージェントを取得
         if (currentGameSeedId && gameMode === "scoreRelay") {
           setIsWaitingAsync(() => true);
@@ -236,7 +231,6 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           }
         }
       });
-
       // 歩道の選択可能状態を解除
       for (const safeZone of safeZones) {
         safeZone.setIsSelectable(false);
@@ -274,7 +268,6 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
             const copiedControllingAgent = controllingAgent.copyAgent();
             setPastAgents((prev) => {
               const newPastAgents = prev;
-              console.log("t", copiedControllingAgent);
               if (!copiedControllingAgent) return prev;
               newPastAgents.push(copiedControllingAgent);
               return newPastAgents;
@@ -348,6 +341,21 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     for (const safeZone of safeZones) {
       safeZone.display();
     }
+
+    p.color(255);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(32);
+    p.text(
+      `${pastAgents.length.toFixed(0)}`,
+      movingArea.width + SIGNAL_AREA_WIDTH / 2,
+      STAMINA_BAR_HEIGHT + 20
+    );
+    p.textSize(20);
+    p.text(
+      `pt`,
+      movingArea.width + SIGNAL_AREA_WIDTH / 2,
+      STAMINA_BAR_HEIGHT + 40
+    );
   }
 
   // マウス操作
@@ -414,7 +422,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
 
     // 信号機を更新・描画
     signal.update(currentTime);
-    signal.display();
+    signal.display(currentTime);
 
     displayStaminaBar(p5);
 
@@ -426,61 +434,66 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     }
   };
   return (
-    <Box p={5} bg="gray.100">
+    <Box p={5} bg="gray.50">
       <VStack spacing={5}>
+        <Heading>🚶‍♀️ 渋谷スクランブル交差点シミュレータ 🚶‍♂️</Heading>
+        <Text>誰にもぶつからず、赤になる前に、歩道から歩道へ移動する</Text>
         <Tabs isFitted variant="enclosed" colorScheme="blue">
-          <TabList mb={1}>
-            <Tab>協力プレイ</Tab>
-            <Tab>ランキングバトル</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <Text fontSize="md">
-                一人のプレイヤーから始まり、スコアをどこまで伸ばせるか、みんなで協力してチャレンジしよう！
-              </Text>
-            </TabPanel>
-            <TabPanel>
-              <Text fontSize="md">
-                他の人と競い、ハイスコアを目指すモード。接触・時間切れは５回以内。
-              </Text>
-            </TabPanel>
-          </TabPanels>
-          <Flex>
+          <Flex direction={{ base: "column", lg: "row" }}>
             <Sketch
               setup={setup}
               draw={draw}
               mousePressed={mousePressed}
               mouseReleased={mouseReleased}
             />
-            <TabPanels>
-              <TabPanel>
-                <ScoreRelay
-                  results={top3Results}
-                  onStartNewGame={onStartNewScoreRelay}
+            <VStack w="450px">
+              <Flex alignItems="center">
+                <Text fontSize="lg" w="5rem">
+                  名前:
+                </Text>
+                <Input
+                  placeholder="名前を入力"
+                  size="md"
+                  onChange={(e) => setName(e.target.value)}
+                  value={name}
                 />
-              </TabPanel>
-              <TabPanel>
-                <RankingBattle
-                  results={leaderboardResult}
-                  onStartNewGame={onStartNewRankingBattle}
-                />
-              </TabPanel>
-            </TabPanels>
+              </Flex>
+              <TabList mb={1} w="100%">
+                <Tab>協力プレイ {gameMode === "scoreRelay" && "✔️"}</Tab>
+                <Tab>
+                  ランキングバトル {gameMode === "rankingBattle" && "✔️"}
+                </Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel>
+                  <Text fontSize="md" h="2rem">
+                    Top3の続きからもプレイできるモードです。
+                  </Text>
+                </TabPanel>
+                <TabPanel>
+                  <Text fontSize="md" h="2rem">
+                    他の人と競い、ハイスコアを目指すモード。接触・時間切れは５回以内。
+                  </Text>
+                </TabPanel>
+              </TabPanels>
+              <TabPanels>
+                <TabPanel>
+                  <ScoreRelay
+                    results={top3Results}
+                    onStartNewGame={onStartNewScoreRelay}
+                    currentGameSeedId={currentGameSeedId}
+                  />
+                </TabPanel>
+                <TabPanel>
+                  <RankingBattle
+                    results={leaderboardResult}
+                    onStartNewGame={onStartNewRankingBattle}
+                  />
+                </TabPanel>
+              </TabPanels>
+            </VStack>
           </Flex>
         </Tabs>
-
-        <HStack w="full" justify="space-between" align="center" mt={4}>
-          <Box>
-            <Text fontSize="lg">スコア: {pastAgents.length}</Text>
-            <Text fontSize="lg">
-              残り時間: {Math.max(0, currentTime).toFixed(2)} 秒
-            </Text>
-          </Box>
-          <Box>
-            <Text fontSize="lg">プレイヤー名:</Text>
-            <Input placeholder="名前を入力" size="md" />
-          </Box>
-        </HStack>
       </VStack>
     </Box>
   );
