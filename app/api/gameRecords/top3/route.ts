@@ -1,5 +1,5 @@
 import connectDB from "@/lib/connect-db";
-import GameRecordMongo from "@/lib/GameRecordMongo";
+import { GameRecordMongo } from "@/lib/model";
 import { NextResponse } from "next/server";
 
 export async function GET() {

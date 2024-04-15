@@ -1,5 +1,5 @@
 import { AgentMovement } from "@/app/game/models/Agent";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
 export type AgentRecord = {
   movements: AgentMovement[];
@@ -21,9 +21,7 @@ export type GameResult = {
   latestTimestamp: number;
 };
 
-export const useGameRecordRemote = () => {
-  const [records, setRecords] = useState<GameRecord[]>([]);
-
+export const useScoreRelay = () => {
   const saveGameRecord = async (
     score: number,
     gameSeedId: string,
@@ -43,11 +41,7 @@ export const useGameRecordRemote = () => {
 
       if (response.ok) {
         const updatedRecord: GameRecord = await response.json();
-        setRecords((prevRecords) =>
-          prevRecords.map((record) =>
-            record.gameSeedId === gameSeedId ? updatedRecord : record
-          )
-        );
+        return updatedRecord;
       }
     } catch (error) {
       console.error("Failed to save game record:", error);

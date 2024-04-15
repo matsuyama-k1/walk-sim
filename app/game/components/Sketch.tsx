@@ -1,15 +1,19 @@
 "use client";
 import p5Types, * as p5 from "p5"; //Import this for typechecking and intellisense
 
-import { useGameRecordRemote } from "@/app/game/hooks/useGameRecordRemote";
+import RankingBattle from "@/app/game/components/RankingBattle";
+import ScoreRelay from "@/app/game/components/ScoreRelay";
+import { useRankingBattle } from "@/app/game/hooks/useRankingBattle";
+import { useScoreRelay } from "@/app/game/hooks/useScoreRelay";
 import { nanoid } from "nanoid";
 import React, { useCallback, useEffect, useState } from "react";
 import Sketch from "react-p5";
-import { AgentRecord, GameRecord, GameResult } from "../hooks/useGameRecords";
+import { AgentRecord, GameRecord, GameResult } from "../hooks/useScoreRelay_";
 import { Agent, AGENT_SIZE } from "../models/Agent";
 import { SafeZone } from "../models/SafeZone";
 import { Signal } from "../models/Signal";
-import Ranking from "./Ranking";
+
+type GameMode = "scoreRelay" | "rankingBattle";
 
 export type SafeZoneName = "tl" | "tr" | "bl" | "br";
 export type Rect = {
@@ -23,7 +27,7 @@ interface WalkSimProps {
   // Your component props
 }
 
-const TIME_LIMIT = 10;
+const TIME_LIMIT = 11;
 
 // 信号機と疲労度バーのエリア
 export const SIGNAL_AREA_WIDTH = 50; // 信号機領域の幅
@@ -39,8 +43,10 @@ const movingArea: Rect = {
 const CANVAS_WIDTH = movingArea.width + SIGNAL_AREA_WIDTH;
 const CANVAS_HEIGHT = movingArea.height + STAMINA_BAR_HEIGHT;
 
+const GAMEOVER_LIMIT = 1;
+
 let controllingAgent: Agent | null;
-const SAFE_ZONE_SIZE: number = 70;
+const SAFE_ZONE_SIZE: number = 80;
 let safeZones: SafeZone[] = [];
 let startingSafeZone: SafeZone | null = null;
 let signal: Signal;
@@ -60,11 +66,14 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   const [pastAgents, setPastAgents] = useState<Agent[]>([]);
   const [top3Results, setTop3Results] = useState<GameResult[]>([]);
   const [isWaitingAsync, setIsWaitingAsync] = useState<boolean>(false);
+  const [gameOverCount, setGameOverCount] = useState<number>(0);
 
-  const [name, setName] = useState<string | undefined>("ななし");
+  const [name, setName] = useState<string>("ななし");
 
-  const { saveGameRecord, getGameRecord, getTop3Results } =
-    useGameRecordRemote();
+  const { saveGameRecord, getGameRecord, getTop3Results } = useScoreRelay();
+  const { addLeaderboardEntry, getTopLeaderboardEntries } = useRankingBattle();
+  const [leaderboardResult, setLeaderboardResult] = useState<GameResult[]>([]);
+  const [gameMode, setGameMode] = useState<GameMode>("scoreRelay");
 
   useEffect(() => {
     const fetchTop3Results = async () => {
@@ -75,8 +84,9 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   }, [getTop3Results]);
 
   // 初回の読み込み
-  const onStartNewGame = useCallback(
+  const onStartNewScoreRelay = useCallback(
     async (gameSeedId?: string) => {
+      setGameMode("scoreRelay");
       setInheritedRecord(() => null);
       let newGameSeedId: string | null = null;
       if (gameSeedId) {
@@ -94,6 +104,11 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
     },
     [getGameRecord]
   );
+
+  const onStartNewRankingBattle = () => {
+    setGameMode("rankingBattle");
+    setIsNewGame(() => true);
+  };
 
   const startNewGame = useCallback(
     (p: p5) => {
@@ -130,18 +145,20 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   const startGame = useCallback(
     (p: p5) => {
       if (!isNewGame) return;
-      if (inheritedRecord) {
+      if (gameMode === "scoreRelay" && inheritedRecord) {
         startInheritedGame(p);
       } else {
         startNewGame(p);
       }
       controllingAgent = null;
       startingSafeZone = null;
+
+      setGameOverCount(0);
       // まずは始まりの歩道を選ぶ
       setIsNewTurn(true);
       setIsNewGame(false);
     },
-    [inheritedRecord, isNewGame, startInheritedGame, startNewGame]
+    [gameMode, inheritedRecord, isNewGame, startInheritedGame, startNewGame]
   );
 
   // 新しいターンの処理
@@ -180,7 +197,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         );
 
         // 過去のエージェントを取得
-        if (currentGameSeedId) {
+        if (currentGameSeedId && gameMode === "scoreRelay") {
           setIsWaitingAsync(() => true);
           const newGameRecord = await getGameRecord(currentGameSeedId);
           setIsWaitingAsync(() => false);
@@ -232,6 +249,20 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           movements: controllingAgent.movements,
           name: name,
         };
+
+        if (gameMode === "rankingBattle") {
+          if (controllingAgent !== null) {
+            controllingAgent.setIsControlled(false);
+            const copiedControllingAgent = controllingAgent.copyAgent();
+            setPastAgents((prev) => {
+              const newPastAgents = prev;
+              console.log("t", copiedControllingAgent);
+              if (!copiedControllingAgent) return prev;
+              newPastAgents.push(copiedControllingAgent);
+              return newPastAgents;
+            });
+          }
+        }
         controllingAgent = null;
         turnEnded = true;
 
@@ -251,6 +282,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         // 信号が赤になる前にエージェントがセーフゾーンに到達できなかった場合
         const failedByTimeOver = TIME_LIMIT < currentTime;
         if (failedByCollision || failedByTimeOver) {
+          setGameOverCount((prev) => prev + 1);
           controllingAgent = null;
           startingSafeZone = null;
           setIsMissed(true);
@@ -259,11 +291,25 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       }
       if (turnEnded) {
         // ランキングを更新
-        setIsWaitingAsync(() => true);
-        const top3Results = await getTop3Results();
-        setIsWaitingAsync(() => false);
-
-        setTop3Results(top3Results);
+        if (gameMode === "scoreRelay") {
+          setIsWaitingAsync(() => true);
+          const top3Results = await getTop3Results();
+          setIsWaitingAsync(() => false);
+          setTop3Results(top3Results);
+        }
+        if (gameMode === "rankingBattle") {
+          setIsWaitingAsync(() => true);
+          const newLeaderboard = await getTopLeaderboardEntries();
+          setIsWaitingAsync(() => false);
+          setLeaderboardResult(newLeaderboard);
+          if (GAMEOVER_LIMIT <= gameOverCount) {
+            setIsNewGame(true);
+            setGameOverCount(0);
+            if (currentGameSeedId) {
+              addLeaderboardEntry(pastAgents.length, currentGameSeedId, name);
+            }
+          }
+        }
       }
     }
   }
@@ -376,7 +422,11 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         Name:{" "}
         <input onChange={(e) => setName(e.target.value)} value={name}></input>
       </div>
-      <Ranking results={top3Results} onStartNewGame={onStartNewGame} />
+      <ScoreRelay results={top3Results} onStartNewGame={onStartNewScoreRelay} />
+      <RankingBattle
+        results={leaderboardResult}
+        onStartNewGame={onStartNewRankingBattle}
+      />
     </div>
   );
 };

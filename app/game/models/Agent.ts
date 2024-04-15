@@ -27,7 +27,7 @@ export class Agent {
   static readonly staminaRecoveryRate: number = 0.005;
 
   lastRecordedTime: number; // 最後に記録された時間
-  static readonly recordInterval: number = 0.05; // 記録間隔（ミリ秒）
+  static readonly recordInterval: number = 0.13; // 記録間隔（ミリ秒）
 
   constructor(
     p: p5,
@@ -52,6 +52,20 @@ export class Agent {
     this.stamina = 1;
     this.isActive = true;
     this.lastRecordedTime = -1;
+  }
+  // コピーコンストラクタ
+  copyAgent(): Agent {
+    const copiedAgent = new Agent(
+      this.p,
+      this.position.x,
+      this.position.y,
+      this.movingArea,
+      this.isControlled,
+      [...this.movements],
+    );
+    copiedAgent.stamina = this.stamina;
+    copiedAgent.isActive = this.isActive;
+    return copiedAgent;
   }
 
   update() {
@@ -94,7 +108,7 @@ export class Agent {
     const mouse = this.p.createVector(this.p.mouseX, this.p.mouseY);
     const desiredVelocity = p5.Vector.sub(mouse, this.position).mult(Agent.k);
     if (this.isRunning) {
-      desiredVelocity.setMag(Agent.Vmax * 2);
+      desiredVelocity.setMag(Agent.Vmax * 2.2);
     } else if (desiredVelocity.mag() > Agent.Vmax) {
       desiredVelocity.setMag(Agent.Vmax);
     }
@@ -177,8 +191,14 @@ export class Agent {
     const t =
       (time - prevMovement.time) / (nextMovement.time - prevMovement.time);
     const lerpPosition = {
-      x: lerp(prevMovement.position.x, nextMovement.position.x, t),
-      y: lerp(prevMovement.position.y, nextMovement.position.y, t),
+      x:
+        Math.round(
+          lerp(prevMovement.position.x, nextMovement.position.x, t) * 1000
+        ) / 1000,
+      y:
+        Math.round(
+          lerp(prevMovement.position.y, nextMovement.position.y, t) * 1000
+        ) / 1000,
     };
 
     this.position = new p5.Vector(lerpPosition.x, lerpPosition.y, 0);

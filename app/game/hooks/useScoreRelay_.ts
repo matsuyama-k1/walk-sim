@@ -21,7 +21,7 @@ export type GameResult = {
   latestTimestamp: number;
 };
 
-export const useGameRecords = () => {
+export const useScoreRelay = () => {
   const [records, setRecords] = useState<GameRecord[]>([]);
 
   const saveGameRecord = async (
