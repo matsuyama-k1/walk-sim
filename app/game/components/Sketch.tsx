@@ -56,7 +56,7 @@ const movingArea: Rect = {
 const CANVAS_WIDTH = movingArea.width + SIGNAL_AREA_WIDTH;
 const CANVAS_HEIGHT = movingArea.height + STAMINA_BAR_HEIGHT;
 
-const GAMEOVER_LIMIT = 1;
+const GAMEOVER_LIMIT = 4;
 
 let controllingAgent: Agent | null;
 const SAFE_ZONE_SIZE: number = 80;
@@ -86,7 +86,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
   const { saveGameRecord, getGameRecord, getTop3Results } = useScoreRelay();
   const { addLeaderboardEntry, getTopLeaderboardEntries } = useRankingBattle();
   const [leaderboardResult, setLeaderboardResult] = useState<GameResult[]>([]);
-  const [gameMode, setGameMode] = useState<GameMode>("scoreRelay");
+  const [gameMode, setGameMode] = useState<GameMode>("rankingBattle");
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -277,7 +277,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
         controllingAgent = null;
         turnEnded = true;
 
-        if (currentGameSeedId) {
+        if (currentGameSeedId && gameMode === "scoreRelay") {
           setIsWaitingAsync(() => true);
           await saveGameRecord(
             pastAgents.length + 1,
@@ -309,6 +309,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           setTop3Results(top3Results);
         }
         if (gameMode === "rankingBattle") {
+          let score;
           setIsWaitingAsync(() => true);
           const newLeaderboard = await getTopLeaderboardEntries();
           setIsWaitingAsync(() => false);
@@ -317,8 +318,15 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
           if (GAMEOVER_LIMIT <= gameOverCount) {
             setIsNewGame(true);
             setGameOverCount(0);
+          } else {
             if (currentGameSeedId) {
-              addLeaderboardEntry(pastAgents.length, currentGameSeedId, name);
+              setIsWaitingAsync(() => true);
+              await addLeaderboardEntry(
+                pastAgents.length + 1,
+                currentGameSeedId,
+                name
+              );
+              setIsWaitingAsync(() => false);
             }
           }
         }
@@ -355,6 +363,17 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       `pt`,
       movingArea.width + SIGNAL_AREA_WIDTH / 2,
       STAMINA_BAR_HEIGHT + 40
+    );
+
+    p.text(
+      `🚶`,
+      movingArea.width + SIGNAL_AREA_WIDTH / 2,
+      STAMINA_BAR_HEIGHT + movingArea.height - 45
+    );
+    p.text(
+      `x ${GAMEOVER_LIMIT - gameOverCount}`,
+      movingArea.width + SIGNAL_AREA_WIDTH / 2,
+      STAMINA_BAR_HEIGHT + movingArea.height - 20
     );
   }
 
@@ -438,7 +457,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
       <VStack spacing={5}>
         <Heading>🚶‍♀️ 渋谷スクランブル交差点シミュレータ 🚶‍♂️</Heading>
         <Text>誰にもぶつからず、赤になる前に、歩道から歩道へ移動する</Text>
-        <Tabs isFitted variant="enclosed" colorScheme="blue">
+        <Tabs isFitted variant="enclosed" colorScheme="blue" defaultIndex={1}>
           <Flex direction={{ base: "column", lg: "row" }}>
             <Sketch
               setup={setup}
@@ -459,7 +478,9 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
                 />
               </Flex>
               <TabList mb={1} w="100%">
-                <Tab>協力プレイ {gameMode === "scoreRelay" && "✔️"}</Tab>
+                <Tab isDisabled>
+                  協力プレイ (工事中) {gameMode === "scoreRelay" && "✔️"}
+                </Tab>
                 <Tab>
                   ランキングバトル {gameMode === "rankingBattle" && "✔️"}
                 </Tab>
