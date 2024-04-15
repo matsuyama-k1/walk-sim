@@ -51,7 +51,9 @@ export const useScoreRelay = () => {
   const getGameRecord = useCallback(
     async (gameSeedId: string): Promise<GameRecord | undefined> => {
       try {
-        const response = await fetch(`/api/gameRecords/${gameSeedId}`);
+        const response = await fetch(`/api/gameRecords/${gameSeedId}`, {
+          cache: "no-cache",
+        });
         if (response.ok) {
           const record: GameRecord = await response.json();
           return record;
@@ -66,7 +68,9 @@ export const useScoreRelay = () => {
 
   const getTop3Results = useCallback(async (): Promise<GameResult[]> => {
     try {
-      const response = await fetch("/api/gameRecords/top3");
+      const response = await fetch("/api/gameRecords/top3", {
+        cache: "no-cache",
+      });
       if (response.ok) {
         const top3Results: GameResult[] = await response.json();
         return top3Results;
