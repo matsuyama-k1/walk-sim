@@ -1,3 +1,4 @@
+"use client"
 import { GameResult } from "@/app/game/hooks/useScoreRelay";
 import { useCallback } from "react";
 
@@ -7,7 +8,7 @@ export const useRankingBattle = () => {
       try {
         const response = await fetch("/api/leaderboard", {
           method: "POST",
-          cache: "no-cache",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
           },
@@ -28,7 +29,7 @@ export const useRankingBattle = () => {
     GameResult[]
   > => {
     try {
-      const response = await fetch("/api/leaderboard", { cache: "no-cache" });
+      const response = await fetch("/api/leaderboard", { cache: "no-store" });
 
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard entries");

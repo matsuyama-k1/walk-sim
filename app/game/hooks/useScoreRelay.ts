@@ -1,3 +1,5 @@
+"use client";
+
 import { AgentMovement } from "@/app/game/models/Agent";
 import { useCallback } from "react";
 
@@ -30,6 +32,7 @@ export const useScoreRelay = () => {
     try {
       const response = await fetch(`/api/gameRecords/${gameSeedId}`, {
         method: "POST",
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
         },
@@ -52,7 +55,7 @@ export const useScoreRelay = () => {
     async (gameSeedId: string): Promise<GameRecord | undefined> => {
       try {
         const response = await fetch(`/api/gameRecords/${gameSeedId}`, {
-          cache: "no-cache",
+          cache: "no-store",
         });
         if (response.ok) {
           const record: GameRecord = await response.json();
@@ -69,7 +72,7 @@ export const useScoreRelay = () => {
   const getTop3Results = useCallback(async (): Promise<GameResult[]> => {
     try {
       const response = await fetch("/api/gameRecords/top3", {
-        cache: "no-cache",
+        cache: "no-store",
       });
       if (response.ok) {
         const top3Results: GameResult[] = await response.json();

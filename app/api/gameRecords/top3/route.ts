@@ -1,3 +1,5 @@
+export const revalidate = 0;
+
 import connectDB from "@/lib/connect-db";
 import { GameRecordMongo } from "@/lib/model";
 import { NextResponse } from "next/server";
