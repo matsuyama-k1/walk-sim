@@ -478,7 +478,7 @@ export const WalkSim: React.FC<WalkSimProps> = (props: WalkSimProps) => {
                 />
               </Flex>
               <TabList mb={1} w="100%">
-                <Tab isDisabled>
+                <Tab>
                   協力プレイ (工事中) {gameMode === "scoreRelay" && "✔️"}
                 </Tab>
                 <Tab>
